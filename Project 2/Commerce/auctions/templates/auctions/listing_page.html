@@ -1,0 +1,218 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    {% load mathfilters %}
+    <!-- ? Listing available -->
+    {% if listing.close == False %}
+        <h2>
+            Listing: {{ listing.title }}
+        </h2>
+        <br>
+        <!-- ? User has log in -->
+        {% if user.is_authenticated %}
+            <!-- ? Already add to watchlist -->
+            {% if user in listing.watchlist.all %}
+                <form action="{% url 'remove' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-sm" name="listing_id" value="{{ listing.id }}">Remove from watchlist</button>
+                </form>
+            <!-- ? Haven't add to watchlist -->
+            {% else %}
+                <form action="{% url 'watchlist' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-sm" name="listing_id" value="{{ listing.id }}">Add to watchlist</button>
+                </form>
+            {% endif %}
+        {% endif %}
+        <!-- ? Has image -->
+        {% if listing.image_url %}
+            <img src="{{ listing.image_url }}" height="400px" class="rounded">
+        <!-- ? No image -->
+        {% else %}
+            <p>
+                No image.
+            </p>
+        {% endif %}
+        <!-- ? Has description -->
+        {% if listing.description %}
+            <p>
+                {{ listing.description }}
+            </p>
+        {% endif %}
+        <!-- ? User has log in -->
+        {% if user.is_authenticated %}
+            <!-- ? Has bid -->
+            {% if listing.bid_raise %}
+                <h5>
+                    Price: ${{ listing.bid_raise|floatformat:2 }}
+                </h5>
+                <p>
+                    {{ count_bid }}bid(s) so far.
+                    {% if user == largest_bid.user %}
+                        Your bid is the current bid.
+                    {% endif %}
+                </p>
+                <!-- ? Seller vist this listing page -->
+                {% if listing.seller == user %}
+                    <form action="{% url 'close_auction' %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="listing" value="{{ listing.id }}">
+                        <input class="btn btn-primary" type="submit" value="Close Auction">
+                    </form>
+                    <br>
+                <!-- ? Other user visit this listing page -->
+                {% else %}
+                    <form action="{% url 'bids' %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="listing" value="{{ listing.id }}">
+                        <input type="number" min="{{ listing.bid_raise|addition:0.01 }}" step="any" name="place_bid" required>
+                        <input class="btn btn-primary btn-sm" type="submit" value="Place Bid">
+                    </form>
+                    <br>
+                {% endif %}
+            <!-- ? Haven't bid -->
+            {% else %}
+                <h5>
+                    <strong>Price: ${{ listing.start_bid|floatformat:2 }}</strong>
+                </h5>
+                <p>No bid so far.</p>
+                {% if not user == listing.seller %}
+                    <form action="{% url 'bids' %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="listing" value="{{ listing.id }}">
+                        <input type="number" min="{{ listing.start_bid|addition:0.01 }}" step="any" name="place_bid" required>
+                        <input class="btn btn-primary btn-sm" type="submit" value="Place Bid">
+                    </form>
+                    <br>
+                {% endif %}
+            {% endif %}
+        <!-- ? No user log in -->
+        {% else %}
+            <!-- ? Has bid -->
+            {% if listing.bid_raise %}
+                <h5>
+                    <strong>Price: ${{ listing.bid_raise|floatformat:2 }}</strong>
+                </h5>
+            <!-- ? Haven't bid -->
+            {% else %}
+                <h5>
+                    <strong>Price: ${{ listing.start_bid|floatformat:2 }}</strong>
+                </h5>
+            {% endif %}
+        {% endif %}
+        <h5>
+            <strong>Details</strong>
+        </h5>
+        <ul>
+            <li>
+                <!-- ? Seller visit this listing page -->
+                {% if listing.seller == user %}
+                    Listed by: <strong>YOU</strong>
+                <!-- ? Other user visit this listing page -->
+                {% else %}
+                    Listed by: {{ listing.seller }}
+                {% endif %}
+            </li>
+            <li>
+                Category: {{ listing.category.category }}
+            </li>
+        </ul>
+        <br>
+        <h5>
+            <strong>Comments:</strong>
+        </h5>
+            {% if user.is_authenticated %}
+                <div class="col-auto">
+                    <form action="{% url 'comments' %}" method="POST">
+                        <div class="form-floating col-auto">
+                            {% csrf_token %}
+                            <input type="hidden" name="listing" value="{{ listing.id }}">
+                            <textarea class="form-control" placeholder="Leave a comment here" id="floatingTextarea" type="text" name="comment" required></textarea>
+                            <label for="floatingTextarea">Comments</label>
+                        </div>
+                        <br>
+                        <div class="col-auto">
+                            <input class="btn btn-primary" type="submit" value="Post">
+                        </div>
+                    </form>
+                </div>
+                <br>
+            {% endif %}
+        <div>
+            {% for comment in comments %}
+                <div class="border-top">
+                    <strong>{{ comment.user }}</strong>
+                    <p>{{ comment.comment }}</p>
+                    <footer class="blockquote-footer">Post at <cite title="Source Title">{{ comment.created_on }}</cite></footer>
+                </div>
+            {% empty %}
+                <p>No any comment.</p>
+            {% endfor %}
+        </div>
+    <!-- ? Listing closed -->
+    {% else %}
+        <div>
+            <h2>
+                Listing: {{ listing.title }}(Closed)
+            </h2>
+            <br>
+            <!-- ? Has image -->
+            {% if listing.image_url %}
+                <img src="{{ listing.image_url }}" height="400px">
+            <!-- ? No image -->
+            {% else %}
+                <p>
+                    No image.
+                </p>
+            {% endif %}
+            <!-- ? Has description -->
+            {% if listing.description %}
+                <p>
+                    {{ listing.description }}
+                </p>
+            {% endif %}
+            <h5>
+                <strong>
+                    {% if user == largest_bid.user %}
+                        You win the auction with the price:
+                    {% else %}
+                        Price:
+                    {% endif %}
+                        ${{ listing.bid_raise|floatformat:2 }}
+                </strong>
+            </h5>
+            <h5>
+                <strong>Details</strong>
+            </h5>
+            <ul>
+                <li>
+                    <!-- ? Seller visit this listing page -->
+                    {% if listing.seller == user %}
+                        Listed by: <strong>YOU</strong>
+                    <!-- ? Other user visit this listing page -->
+                    {% else %}
+                        Listed by: {{ listing.seller }}
+                    {% endif %}
+                </li>
+                <li>
+                    Category: {{ listing.category.category }}
+                </li>
+            </ul>
+            <br>
+            <h5>
+                <strong>Comments:</strong>
+            </h5>
+            <div>
+                {% for comment in comments %}
+                    <div>
+                        <strong>{{ comment.user }}</strong>
+                        <p>{{ comment.comment }}</p>
+                        <footer class="blockquote-footer">Post at <cite title="Source Title">{{ comment.created_on }}</cite></footer>
+                    </div>
+                {% empty %}
+                    <p>No any comment.</p>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

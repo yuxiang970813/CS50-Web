@@ -1,0 +1,11 @@
+#poster, .edit {
+    text-decoration: none;
+}
+
+.edit-post {
+    display: none;
+}
+
+.like-area:hover {
+    cursor: pointer;
+}

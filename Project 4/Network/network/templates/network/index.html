@@ -1,0 +1,130 @@
+{% extends "network/layout.html" %}
+
+{% block body %}
+    <h1>All Posts</h1>
+    <hr>
+
+    <!--* New Post Area -->
+    {% if user.is_authenticated %}
+        <div class="container-lg border border-3 rounded">
+            <form action="{% url 'new_post' %}" method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="new-post" class="form-label fs-2">
+                        New Post
+                    </label>
+                    <textarea class="form-control" id="new-post" name="content"
+                        placeholder="What's on your mind?" rows="3" maxlength="128" required></textarea>
+                </div>
+                <button type="subimt" class="btn btn-primary">Post</button>
+            </form>
+            <br>
+        </div>
+    {% endif %}
+    <hr>
+
+    <!--* All post -->
+    <div class="container-lg border border-3 rounded">
+        <br>
+        {% for post in page_obj.object_list %}
+            <div class="container-lg border border-3 rounded">
+                <div class="d-flex">
+                    <!--? Username -->
+                    <div class="p-2 flex-grow-1 fs-4">
+                        <a href="{% url 'user_profile' post.user.id %}" id="poster">
+                            👤 {{ post.user }}
+                        </a>
+                    </div>                   
+                    <!--? Edit button -->
+                    <div class="p-2 align-self-end">
+                        {% if user.is_authenticated and user == post.user %}
+                            <button class="edit btn btn-outline-light" data-id="{{ post.id }}" style="font-size:14px">
+                                Edit
+                            </button>
+                        {% endif %}
+                    </div>  
+                </div>
+                <div class="text-success">
+                    <hr style="margin-top:0.1em">
+                </div>
+                <!--! Textarea for edit post(Hide default) -->
+                <div id="edit-post_{{ post.id }}" class="edit-post">
+                    <div class="mb-3">
+                        <textarea id="edit-area_{{ post.id }}" class="form-control fs-4" rows="2" maxlength="128">{{ post.content }}</textarea>
+                    </div>
+                    <button id="save-post_{{ post.id }}" class="save btn btn-primary btn-sm" data-id="{{ post.id }}" style="float:right">Save</button>
+                </div>    
+                <!--? Post content -->
+                <div id="post-content_{{ post.id }}">
+                    <p id="contentArea_{{ post.id }}" class="fs-5">
+                        {{ post.content }}
+                    </p>
+                </div>
+                <div>
+                    <!--? Like button -->       
+                    <div class="d-flex mb-3">
+                        <div class="p-2 like-area" id="like-area_{{ post.id }}">
+                            {% if user.is_authenticated %}
+                                {% if user in post.liker.all %}
+                                    <div id="unlike_{{ post.id }}" class="unlike" data-id="{{ post.id }}">❤️</div>
+                                {% else %}
+                                    <div id="like_{{ post.id }}" class="like" data-id="{{ post.id }}">🤍</div>
+                                {% endif %}
+                            {% else %}
+                                <div>🤍</div>
+                            {% endif %}
+                        </div>
+                        <div class="p-2" id="like-count_{{ post.id }}">{{ post.liker.all|length }}</div>
+                    </div>
+                    <br>
+                    <!--? Created time -->
+                    <footer class="blockquote-footer" style="text-align:right">Post at <cite title="Source Title">{{ post.created_time }}</cite></footer>
+                </div>
+            </div>
+            <br>
+        {% endfor %}
+    </div>
+    <br><hr>
+
+    <!--* Change page -->
+    <div class="container">
+        <div class="row">
+            <!--? Previous page -->
+            <div class="col">           
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination justify-content-start">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            <!--? Last page -->
+            <div class="col-6">
+                {% if not page_obj.has_next %}
+                <p class="text-muted text-center">
+                    There are no more posts to show.
+                </p>
+                {% endif %}
+            </div>
+            <!--? Next page -->
+            <div class="col">   
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination justify-content-end">
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+{% endblock %}

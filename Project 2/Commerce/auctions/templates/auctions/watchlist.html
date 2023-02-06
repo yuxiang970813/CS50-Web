@@ -1,0 +1,60 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <h2>Watchlist</h2>
+    <br>
+    {% for listing in listings %}
+        <div class="border-top">
+            <h4>
+                <a href="{% url 'listing_page' listing.id %}">
+                    {{ listing.title }}
+                    <!-- ? If listing has closed -->
+                    {% if listing.close == True %}
+                        (Closed)
+                    {% endif %}
+                </a>
+            </h4>
+            <!-- ? Has image -->
+            {% if listing.image_url %}
+                <img src="{{ listing.image_url }}" height="300" class="rounded">
+            <!-- ? No image -->
+            {% else %}
+                <p>
+                    No image.
+                </p>
+            {% endif %}
+            <br>
+            <h5>
+                <strong>
+                    Price: $
+                    <!-- ? Bid raise available -->
+                    {% if listing.bid_raise %}
+                        {{ listing.bid_raise|floatformat:2 }}
+                    <!-- ? No bid raise -->
+                    {% else %}
+                        {{ listing.start_bid|floatformat:2 }}
+                    {% endif %}
+                </strong>
+            </h5>
+            <!-- ? Has description -->
+            {% if listing.description %}
+                <h6>
+                    {{ listing.description }}
+                </h6>
+            {% endif %}
+            <br>
+            <footer class="blockquote-footer">Created <cite title="Source Title">{{ listing.created_on }}</cite></footer>
+        </div>
+        <div>
+            <form action="{% url 'remove' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" name="listing_id" value="{{ listing.id }}" class="btn btn-primary btn-sm">Remove from watchlist</button>
+            </form>
+        </div>
+        <br>
+    {% empty %}
+        <h4>
+            Looks like you aren't watching any items yet.
+        </h4>
+    {% endfor %}
+{% endblock %}
